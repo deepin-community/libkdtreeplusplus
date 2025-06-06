@@ -1,0 +1,67 @@
+Description: Add setup.py to build the Python bindings
+ With a proper setup.py the bindings are installed in the correct place, i.e
+ /usr/lib/pythonX.Y/site-packages on Linux. In particular, they are installed in
+ /usr/lib/python2.Y/dist-packages and /usr/lib/python3/dist-packages on Debian.
+Author: Sebastian Ramacher <sramacher@debian.org>
+Origin: vendor
+Last-Update: 2012-11-17
+Forwarded: http://lists.alioth.debian.org/pipermail/libkdtree-devel/2012-October/000363.html
+
+---
+ python-bindings/setup.py |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 44 insertions(+)
+ create mode 100644 python-bindings/setup.py
+
+diff --git a/python-bindings/setup.py b/python-bindings/setup.py
+new file mode 100644
+index 0000000..ff7953f
+--- /dev/null
++++ b/python-bindings/setup.py
+@@ -0,0 +1,44 @@
++#! /usr/bin/python
++
++from distutils.core import setup, Extension, Command
++import sys
++import unittest
++
++class TestCommand(Command):
++  description = "Run test suite"
++  user_options = []
++
++  def initialize_options(self):
++    self.build_dir = None
++
++  def finalize_options(self):
++    self.set_undefined_options('install', ('build_lib', 'build_dir'))
++
++  def run(self):
++    self.announce("running tests")
++    old_path = sys.path[:]
++    try:
++      sys.path.insert(0, self.build_dir)
++      from py_kdtree_test import suite
++      res = unittest.TextTestRunner().run(suite())
++      if not res.wasSuccessful():
++        sys.exit(1)
++    finally:
++      # Restore sys.path
++      sys.path[:] = old_path
++
++setup(
++  name='kdtree',
++  version='0.7.1',
++  author='kdtree authors',
++  description='kd-tree',
++  ext_modules=[
++    Extension('_kdtree',
++              sources=['py-kdtree.i'],
++              swig_opts=['-modern', '-c++'],
++              include_dirs=['..'])],
++  py_modules=['kdtree'],
++  cmdclass={
++    'test': TestCommand
++  }
++)
+-- 
+1.7.10.4
+

@@ -1,0 +1,119 @@
+Description: Use setup.py from cmake to build the Python bindings
+ Run the appropriate setup.py targets to build, test and install the Python
+ bindings from cmake.
+Author: Sebastian Ramacher <sramacher@debian.org>
+Origin: vendor
+Last-Update: 2012-11-17
+Forwarded: http://lists.alioth.debian.org/pipermail/libkdtree-devel/2012-October/000363.html
+
+---
+ python-bindings/CMakeLists.txt              |   61 +++++++++++++++++++++------
+ python-bindings/setup_py_with_destdir.cmake |   25 +++++++++++
+ 2 files changed, 72 insertions(+), 14 deletions(-)
+ create mode 100644 python-bindings/setup_py_with_destdir.cmake
+
+diff --git a/python-bindings/CMakeLists.txt b/python-bindings/CMakeLists.txt
+index 4200cf4..176a982 100644
+--- a/python-bindings/CMakeLists.txt
++++ b/python-bindings/CMakeLists.txt
+@@ -1,19 +1,52 @@
+-find_package (SWIG REQUIRED)
+-include (${SWIG_USE_FILE})
++FIND_PACKAGE(PythonInterp REQUIRED)
+ 
+-find_package (PythonLibs)
+-include_directories (${PYTHON_INCLUDE_PATH})
++# build
+ 
+-include_directories (${CMAKE_CURRENT_SOURCE_DIR})
+-include_directories (${CMAKE_CURRENT_SOURCE_DIR}/..)
++FILE(COPY
++  ${CMAKE_CURRENT_SOURCE_DIR}/py-kdtree.hpp.tmpl
++  DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
++FILE(COPY
++  ${CMAKE_CURRENT_SOURCE_DIR}/py-kdtree.i.tmpl
++  DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+ 
+-# Build the _kdtree python module
+-set_source_files_properties (py-kdtree.i PROPERTIES CPLUSPLUS ON)
+-swig_add_module (kdtree python py-kdtree.i)
+-swig_link_libraries (kdtree ${PYTHON_LIBRARIES})
++ADD_CUSTOM_COMMAND(OUTPUT py-kdtree.hpp py-kdtree.i
++  COMMAND ${PYTHON_EXECUTABLE}
++    ${CMAKE_SOURCE_DIR}/python-bindings/gen-swig-hpp.py
++  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
++  DEPENDS gen-swig-hpp.py py-kdtree.hpp.tmpl py-kdtree.i.tmpl
++)
+ 
+-# Copy the test file into the build dir
+-install (FILES py-kdtree_test.py DESTINATION ${CMAKE_INSTALL_PREFIX}/python)
+-install (FILES ${CMAKE_BINARY_DIR}/python-bindings/kdtree.py DESTINATION ${CMAKE_INSTALL_PREFIX}/python)
+-install (FILES ${CMAKE_BINARY_DIR}/python-bindings/_kdtree.so DESTINATION ${CMAKE_INSTALL_PREFIX}/python)
++ADD_CUSTOM_COMMAND(OUTPUT _kdtree.so kdtree.py
++  COMMAND ${PYTHON_EXECUTABLE}
++    ${CMAKE_SOURCE_DIR}/python-bindings/setup.py
++    build_ext
++    --include-dir=${CMAKE_SOURCE_DIR}
++    build
++  DEPENDS py-kdtree.hpp py-kdtree.i setup.py
++  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
++)
+ 
++ADD_CUSTOM_TARGET(python-kdtree ALL DEPENDS _kdtree.so kdtree.py)
++
++# install
++
++INSTALL(CODE "execute_process(
++  COMMAND ${CMAKE_COMMAND}
++    -DSETUP_PY=${CMAKE_CURRENT_SOURCE_DIR}/setup.py
++    -DPYTHON_EXECUTABLE=${PYTHON_EXECUTABLE}
++    -DPREFIX=${CMAKE_INSTALL_PREFIX}
++    -DWDIR=${CMAKE_CURRENT_BINARY_DIR}
++    -P ${CMAKE_CURRENT_SOURCE_DIR}/setup_py_with_destdir.cmake)"
++  DEPENDS python-kdtree
++)
++
++# tests
++
++ADD_TEST(NAME python-kdtree
++  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
++  COMMAND ${PYTHON_EXECUTABLE}
++    ${CMAKE_CURRENT_SOURCE_DIR}/setup.py test
++)
++SET_TESTS_PROPERTIES(python-kdtree
++  PROPERTIES ENVIRONMENT
++  "PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}")
+diff --git a/python-bindings/setup_py_with_destdir.cmake b/python-bindings/setup_py_with_destdir.cmake
+new file mode 100644
+index 0000000..6114fad
+--- /dev/null
++++ b/python-bindings/setup_py_with_destdir.cmake
+@@ -0,0 +1,25 @@
++# This is a ugly workaround to be able to pass DESTDIR as --root to setup.py.
++# cmake expands any occurence of $ENV{foo} with the value of foo while runing
++# cmake and not while running make afterwards.
++
++SET(PYTHON_EXECUTABLE "" CACHE FORCE "Python executable")
++SET(PREFIX ${CMAKE_INSTALL_PREFIX} CACHE FORCE "cmake install prefix")
++SET(WDIR "" CACHE FORCE "working directory")
++SET(SETUP_PY "" CACHE FORCE "setup.py path")
++SET(EXTRA_ARGS $ENV{SETUP_PY_EXTRA_ARGS} CACHE FORCE "extra arguments for setup.py")
++
++SET(INSTALL_ROOT $ENV{DESTDIR})
++IF(INSTALL_ROOT)
++  SET(INSTALL_ROOT_ARGS "--root=$ENV{DESTDIR}")
++ELSE(INSTALL_ROOT)
++  SET(INSTALL_ROOT_ARGS "")
++ENDIF(INSTALL_ROOT)
++
++EXECUTE_PROCESS(
++  COMMAND ${PYTHON_EXECUTABLE}
++    ${SETUP_PY}
++    install
++    --prefix=${PREFIX}
++    ${INSTALL_ROOT_ARGS}
++    ${EXTRA_ARGS}
++  WORKING_DIRECTORY ${WDIR})
+-- 
+1.7.10.4
+

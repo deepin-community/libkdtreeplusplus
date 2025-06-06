@@ -1,4 +1,71 @@
 #!/usr/bin/make -f
 
+# run setup.py install with --install-layout=deb
+export SETUP_PY_EXTRA_ARGS=--install-layout=deb
+
+
+# default Python 3 version
+PYTHON = $(shell py3versions -dv)
+
+# Python 3 versions
+PYTHON3 = $(shell py3versions -s)
+
 %:
-	dh $@
+	dh $@ --buildsystem=cmake
+
+# clean targets
+
+cmake-clean-%:
+	rm -rf build-$*
+
+override_dh_auto_clean: \
+	$(PYTHON3:python%=cmake-clean-%)
+
+# configure targets
+
+cmake-configure-%:
+	dh_auto_configure -Bbuild-$* -- \
+		-DBUILD_PYTHON_BINDINGS=1 \
+		-DPYTHON_EXECUTABLE=/usr/bin/python$*
+
+override_dh_auto_configure: \
+	$(PYTHON3:python%=cmake-configure-%)
+
+# build targets
+
+cmake-build-%:
+	dh_auto_build -Bbuild-$*
+
+override_dh_auto_build: \
+	$(PYTHON3:python%=cmake-build-%)
+
+# test targets
+
+cmake-test-%-stamp:
+ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+	dh_auto_test -Bbuild-$*/python-bindings
+endif
+	touch $@
+
+override_dh_auto_test: \
+	$(PYTHON3:python%=cmake-test-%-stamp)
+ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+	dh_auto_test \
+		-Bbuild-$(PYTHON)
+endif
+
+# install targets
+
+cmake-install-%:
+	dh_auto_install -Bbuild-$*/python-bindings
+
+override_dh_auto_install: \
+	$(PYTHON3:python%=cmake-install-%)
+	dh_auto_install \
+		-Bbuild-$(PYTHON)
+
+override_dh_strip:
+	dh_strip --dbgsym-migration='python3-kdtree-dbg (<< 0.7.1+git20101123-6~)'
+
+execute_after_dh_python3:
+	find debian/python3-kdtree -name '*.cpython-*dm-*so' | xargs -r rm -f

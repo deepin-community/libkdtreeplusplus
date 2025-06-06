@@ -1,0 +1,3 @@
+usr/lib/python3*/*-packages/*.egg-info
+usr/lib/python3*/*-packages/*.py
+usr/lib/python3*/*-packages/*.cpython-3*-${DEB_HOST_MULTIARCH}.so

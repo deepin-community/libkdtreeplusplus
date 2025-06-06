@@ -1,0 +1,2 @@
+python-bindings/*.pyc
+python-bindings/__pycache__/*.pyc

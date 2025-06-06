@@ -1,0 +1,24 @@
+Description: Install headers in correct location
+Author: Sebastian Ramacher <sramacher@debian.org>
+Origin: vendor
+Last-Update: 2012-11-17
+Forwarded: http://lists.alioth.debian.org/pipermail/libkdtree-devel/2012-October/000363.html
+
+---
+ CMakeLists.txt |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index ebd596a..9c071a3 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -34,5 +34,5 @@ include_directories (${PROJECT_SOURCE_DIR})
+ add_subdirectory(examples)
+ 
+ file (GLOB KDTREE_HEADERS kdtree++/*.hpp)
+-install (FILES ${KDTREE_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include)
++install (FILES ${KDTREE_HEADERS} DESTINATION ${CMAKE_INSTALL_PREFIX}/include/kdtree++)
+ 
+-- 
+1.7.10.4
+

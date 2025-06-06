@@ -1,0 +1,8 @@
+close-file-handles.patch
+fix-python3-incompatibilities.patch
+enable-tests.patch
+fix-headers-install-location.patch
+rename-py-kdtree_test.py.patch
+add-setup.py.patch
+use-setup.py-in-cmake.patch
+disable-improper-test.patch

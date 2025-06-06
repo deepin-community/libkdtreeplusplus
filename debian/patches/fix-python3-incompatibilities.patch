@@ -1,0 +1,31 @@
+Description: Fix Python 3 incompatibilities
+ There is no long in Python 3.
+Author: Sebastian Ramacher <sramacher@debian.org>
+Origin: vendor
+Last-Update: 2012-11-17
+Forwarded: http://lists.alioth.debian.org/pipermail/libkdtree-devel/2012-October/000363.html
+
+---
+ python-bindings/py-kdtree_test.py |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/python-bindings/py-kdtree_test.py b/python-bindings/py-kdtree_test.py
+index 4227b71..6305b0e 100644
+--- a/python-bindings/py-kdtree_test.py
++++ b/python-bindings/py-kdtree_test.py
+@@ -3,9 +3,12 @@
+ #
+ 
+ import unittest
++import sys
+ 
+ from kdtree import KDTree_2Int, KDTree_4Int, KDTree_3Float, KDTree_4Float, KDTree_6Float
+ 
++if sys.version > '3':
++    long = int
+ 
+ class KDTree_2IntTestCase(unittest.TestCase):
+     def test_empty(self):
+-- 
+1.7.10.4
+

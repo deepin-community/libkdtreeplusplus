@@ -1,0 +1,29 @@
+Description: Close file handles properly
+Author: Sebastian Ramacher <sramacher@debian.org>
+Origin: vendor
+Last-Update: 2012-11-17
+Forwarded: http://lists.alioth.debian.org/pipermail/libkdtree-devel/2012-October/000363.html
+
+---
+ python-bindings/gen-swig-hpp.py |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/python-bindings/gen-swig-hpp.py b/python-bindings/gen-swig-hpp.py
+index c675648..314820d 100755
+--- a/python-bindings/gen-swig-hpp.py
++++ b/python-bindings/gen-swig-hpp.py
+@@ -183,8 +183,10 @@ def write_swig_file(tmpl_fn_name, swig_fn_name):
+     TMPL_BODY = "\n\n".join(TMPL_BODY_LIST)
+ 
+     # write swig file
+-    i_content = open(tmpl_fn_name, "r").read()
++    f = open(tmpl_fn_name, "r")
++    i_content = f.read()
+     i_content = i_content.replace("%%TMPL_BODY%%", TMPL_BODY).replace("%%TMPL_PY_CLASS_DEF%%", "\n".join(TMPL_PY_CLASS))
++    f.close()
+     f=open(swig_fn_name, "w")
+     f.write(i_content)
+     f.close()
+-- 
+1.7.10.4
+
